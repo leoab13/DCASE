@@ -1,0 +1,75 @@
+Flujo de Trabajo y División de Tareas
+
+1. Feature: Preprocessing
+    *Objetivo: Descargar, organizar y procesar los archivos de audio para que puedan ser utilizados en el modelo.
+
+Tareas:
+
+    *Descargar y estructurar los datos en data/raw/.
+    *Convertir los audios a un formato uniforme (ej. mono, 16kHz).
+    *Extraer características:
+        *MFCC (Mel-Frequency Cepstral Coefficients) 13 coeficientes
+        *Espectrogramas
+        *Spectral Contrast
+        *Spectral Bandwidth
+        *Entropía
+        *RMS
+    *Guardar los datos preprocesados en data/processed/.
+    *Documentar el código en utils/audio_processing.py.
+
+Entrega:
+    *data/processed/ con archivos listos para entrenar.
+    *Script audio_processing.py.
+    *Ejemplo de processed:
+        filename       mfcc_1  mfcc_2  mfcc_3  mfcc_4  mfcc_5  mfcc_6  mfcc_7  mfcc_8  mfcc_9  mfcc_10  mfcc_11  mfcc_12  mfcc_13  spec_contrast_1  spec_contrast_2  spec_contrast_3  spec_contrast_4  spec_contrast_5  spec_contrast_6  spec_bandwidth  entropy  rms
+-----------------------------------------------------------------------------------------------------------------------------
+audio_1.wav    12.34   10.56   9.87    8.76    7.89    6.54    5.32    4.56    3.21    2.98      1.23      0.98      0.76      3.21             2.98             2.76             2.54             2.45             2.32             0.78            0.12     0.45
+audio_2.wav    11.78   9.34    8.56    7.34    6.78    5.12    4.78    4.12    3.45    2.76      1.45      1.12      0.89      3.45             3.12             2.89             2.65             2.56             2.43             0.89            0.15     0.40
+
+
+2. Feature: Dataset
+    *Objetivo: Implementar la carga de datos desde el CSV proporcionado y preparar los datos para el entrenamiento.
+
+Tareas:
+    *Leer el archivo CSV con los nombres de los archivos de audio.
+    *Cargar los audios correspondientes desde data/processed/.
+    *Asignar etiquetas a cada archivo según el CSV.
+    *Implementar DataLoader para manejar los lotes de datos.
+    *Asegurar compatibilidad con PyTorch/TensorFlow.
+
+Entrega:
+    *dataset.py con la implementación de carga de datos.
+    *Datos correctamente cargados y listos para su uso.
+
+3. Feature: Training
+    *Objetivo: Entrenar el modelo de clasificación de audio.
+
+Tareas:
+    *Implementar el modelo (ej. CNN, LSTM o Transformer).
+    *Configurar el entrenamiento en models/train.py.
+    *Definir la función de pérdida y el optimizador.
+    *Entrenar el modelo con los datos proporcionados.
+
+Entrega:
+    *train.py con la lógica de entrenamiento.
+    *Modelos guardados para evaluación.
+
+4. Feature: Evaluation (Responsable: Persona 4)
+    *Objetivo: Evaluar el rendimiento del modelo y optimizarlo.
+
+Tareas:
+    *Implementar métricas de desempeño (precisión, F1-score, matriz de confusión).
+    *Evaluar el modelo en models/evaluate.py.
+    *Ajustar hiperparámetros y realizar fine-tuning.
+    *Comparar modelos y seleccionar el mejor.
+
+Entrega:
+    *evaluate.py con la evaluación y métricas.
+    *Reporte de resultados con gráficos.
+
+
+Flujo del Programa Completo
+    *audio_processing.py procesa los archivos de audio y los guarda en data/processed/.
+    *dataset.py lee el CSV, carga los archivos de data/processed/ y los prepara en un DataLoader.
+    *train.py entrena el modelo utilizando los datos preparados.
+    *evaluate.py mide el rendimiento del modelo y ajusta los parámetros.
