@@ -54,7 +54,7 @@ Entrega:
     *train.py con la lógica de entrenamiento.
     *Modelos guardados para evaluación.
 
-4. Feature: Evaluation (Responsable: Persona 4)
+4. Feature: Evaluation
     *Objetivo: Evaluar el rendimiento del modelo y optimizarlo.
 
 Tareas:
