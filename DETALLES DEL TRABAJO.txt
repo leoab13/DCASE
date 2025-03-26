@@ -73,3 +73,23 @@ Flujo del Programa Completo
     *dataset.py lee el CSV, carga los archivos de data/processed/ y los prepara en un DataLoader.
     *train.py entrena el modelo utilizando los datos preparados.
     *evaluate.py mide el rendimiento del modelo y ajusta los parámetros.
+
+ARBOL DEL PROYECTO
+    audio_classification/
+│── data/                # Carpeta para almacenar los datos de audio
+│   ├── raw/             # Datos originales
+│   ├── processed/       # Datos transformados (MFCC, espectrogramas, etc.)
+│   ├── splits/          # Conjuntos de entrenamiento, validación y prueba
+│
+│── models/              # Modelos entrenados y scripts para definirlos (dependiendo del modelo seleccionado)
+│   ├── cnn_model.py
+│   ├── lstm_model.py
+│   ├── train.py         # Script de entrenamiento
+│
+│── utils/               # Funciones auxiliares
+│   ├── audio_processing.py  # Preprocesamiento de audio (MFCC, espectrogramas)
+│   ├── dataset.py       # Carga de datos y generación de lotes
+│
+│── main.py              # Archivo principal para ejecutar el entrenamiento
+│── requirements.txt     # Librerías necesarias
+│── README.md            # Descripción del proyecto
