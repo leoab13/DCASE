@@ -1,4 +1,3 @@
-os
 keras
 matplotlib
 numpy
