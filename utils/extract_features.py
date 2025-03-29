@@ -53,29 +53,41 @@ def extract_features_from_folder(folder_path, output_dir, sr=16000):
                 y, sr = librosa.load(file_path, sr=sr, mono=True)
                 features = FeatureExtractor.extract_features(y, sr)
                 features['filename'] = filename
+                features['folder'] = os.path.basename(folder_path) 
                 processed_data.append(features)
             except Exception as e:
                 print(f"Error al procesar el archivo {filename}: {e}")
 
     if processed_data:
-        df = pd.DataFrame(processed_data)
-        os.makedirs(output_dir, exist_ok=True)
-        output_file = os.path.join(output_dir, f"{os.path.basename(folder_path)}_features.csv")
-        df.to_csv(output_file, index=False)
-
-        print(f"Datos procesados y guardados en {output_file}")
-        return df
+        return processed_data
     else:
         print(f"No se procesaron archivos en {folder_path}.")
         return None
 
 
+def process_all_folders(input_dir, output_dir):
+    all_features = []
+
+    for folder_name, subfolders, filenames in os.walk(input_dir):
+        if 'audio' in folder_name.lower():
+            folder_data = extract_features_from_folder(folder_name, output_dir)
+            if folder_data:
+                all_features.extend(folder_data)
+
+    if all_features:
+        df = pd.DataFrame(all_features)
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = os.path.join(output_dir, "all_audio_features.csv")
+        df.to_csv(output_file, index=False)
+        print(f"Datos procesados y guardados en {output_file}")
+    else:
+        print("No se procesaron archivos.")
+
+
 if __name__ == "__main__":
-    folder_to_process = "C:/Users/quint/OneDrive/Escritorio/AUDIO DEL PELON/DCASE/data/processed/TAU-urban-acoustic-scenes-2022-mobile-development.audio.1/TAU-urban-acoustic-scenes-2022-mobile-development/audio"
-    output_dir = "C:/Users/quint/OneDrive/Escritorio/AUDIO DEL PELON/DCASE/data/processed"  # Directorio donde se guardarán los CSVs
+    input_dir = "/data/processed" 
+    output_dir = "/data/processed"
 
     print("Inicio de la conversión de audios...")
-    
-    extract_features_from_folder(folder_to_process, output_dir)
-
+    process_all_folders(input_dir, output_dir)
     print("Conversión completada.")
