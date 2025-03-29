@@ -1,38 +1,66 @@
-import os
 import pandas as pd
-from torch.utils.data import Dataset, DataLoader
-import numpy as np
 import torch
+from torch.utils.data import Dataset
 
 class AudioDataset(Dataset):
-    def __init__(self, csv_file, processed_data_dir):
+    def __init__(self, csv_file):
         """
         Args:
-            csv_file (str): Path to the CSV file with annotations.
-            processed_data_dir (str): Directory with processed audio features.
+            csv_file (str): Ruta al archivo CSV con características y nombres de archivo.
         """
-        self.annotations = pd.read_csv(csv_file)
-        self.processed_data_dir = os.path.normpath(processed_data_dir)  # Normalize the path
+        # Leer el archivo CSV
+        self.data = pd.read_csv(csv_file)
 
     def __len__(self):
-        return len(self.annotations)
+        """
+        Returns:
+            int: Número total de muestras en el dataset.
+        """
+        return len(self.data)
 
     def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
+        """
+        Args:
+            idx (int): Índice de la fila a recuperar.
+        Returns:
+            dict: Diccionario con características y etiqueta.
+        """
+        # Obtener la fila correspondiente
+        row = self.data.iloc[idx]
 
-        # Get the filename and label from the CSV
-        filename = self.annotations.iloc[idx]['filename'].strip()
-        file_path = os.path.join(self.processed_data_dir, filename)        
-        
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"Processed file not found: {file_path}")
-        print(f"Loading file: {file_path}")
-        features = np.load(file_path, allow_pickle=True)
+        # Extraer las características (todas las columnas excepto 'filename')
+        features = row.drop('filename').values.astype(float)
+        features_tensor = torch.tensor(features, dtype=torch.float32)
 
-        # Convert label to tensor
-        label = torch.tensor(label, dtype=torch.long)
+        # Extraer la etiqueta desde el nombre del archivo
+        filename = row['filename']
+        label = self.extract_label_from_filename(filename)
+        label_tensor = torch.tensor(label, dtype=torch.long)
 
-        sample = {'features': torch.tensor(features, dtype=torch.float32), 'label': label}
+        return {'features': features_tensor, 'label': label_tensor}
 
-        return sample
+    def extract_label_from_filename(self, filename):
+        """
+        Extrae la etiqueta desde el nombre del archivo.
+        Args:
+            filename (str): Nombre del archivo de audio.
+        Returns:
+            int: Etiqueta extraída.
+        """
+        # Dividir el nombre del archivo por guiones
+        parts = filename.split('-')
+
+        # Personaliza esta lógica según el patrón de las etiquetas
+        if len(parts) > 1:
+            # Por ejemplo, usar la segunda parte como etiqueta
+            label = parts[1]
+        else:
+            raise ValueError(f"No se pudo extraer una etiqueta del archivo: {filename}")
+
+        # Mapear etiquetas a números (puedes personalizar este mapeo)
+        label_mapping = {
+            "helsinki": 0,
+            "barcelona": 1,
+            # Agrega más etiquetas aquí si es necesario
+        }
+        return label_mapping.get(label, -1)  # Devuelve -1 si no se encuentra la etiqueta
