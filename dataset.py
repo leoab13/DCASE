@@ -5,16 +5,14 @@ import numpy as np
 import torch
 
 class AudioDataset(Dataset):
-    def __init__(self, csv_file, processed_data_dir, transform=None):
+    def __init__(self, csv_file, processed_data_dir):
         """
         Args:
             csv_file (str): Path to the CSV file with annotations.
             processed_data_dir (str): Directory with processed audio features.
-            transform (callable, optional): Optional transform to be applied on a sample.
         """
         self.annotations = pd.read_csv(csv_file)
-        self.processed_data_dir = processed_data_dir
-        self.transform = transform
+        self.processed_data_dir = os.path.normpath(processed_data_dir)  # Normalize the path
 
     def __len__(self):
         return len(self.annotations)
@@ -24,30 +22,17 @@ class AudioDataset(Dataset):
             idx = idx.tolist()
 
         # Get the filename and label from the CSV
-        filename = self.annotations.iloc[idx, 0]
-        label = self.annotations.iloc[idx, 1]  # Assuming the second column contains labels
+        filename = self.annotations.iloc[idx]['filename'].strip()
+        file_path = os.path.join(self.processed_data_dir, filename)        
+        
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Processed file not found: {file_path}")
+        print(f"Loading file: {file_path}")
+        features = np.load(file_path, allow_pickle=True)
 
-        # Load the processed features
-        file_path = os.path.join(self.processed_data_dir, filename)
-        features = np.load(file_path)  # Assuming features are saved as .npy files
+        # Convert label to tensor
+        label = torch.tensor(label, dtype=torch.long)
 
-        sample = {'features': features, 'label': label}
-
-        if self.transform:
-            sample = self.transform(sample)
+        sample = {'features': torch.tensor(features, dtype=torch.float32), 'label': label}
 
         return sample
-
-# Example usage
-if __name__ == "__main__":
-    # Paths to the CSV and processed data directory
-    csv_path = "dataset/splits/train.csv"  # Update with the correct path
-    processed_data_dir = "data/processed/"
-
-    # Create the dataset and DataLoader
-    dataset = AudioDataset(csv_file=csv_path, processed_data_dir=processed_data_dir)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-
-    # Iterate through the DataLoader
-    for batch in dataloader:
-        print(batch['features'].shape, batch['label'])
