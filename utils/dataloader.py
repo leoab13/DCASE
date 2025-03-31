@@ -61,6 +61,11 @@ class AudioDataset(Dataset):
         label_mapping = {
             "helsinki": 0,
             "barcelona": 1,
+            "lisbon": 2,
+            "london": 3,
+            "milan": 4,
+            "paris":5,
+            "lyon":6
             # Agrega más etiquetas aquí si es necesario
         }
         return label_mapping.get(label, -1)  # Devuelve -1 si no se encuentra la etiqueta
