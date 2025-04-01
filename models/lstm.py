@@ -43,7 +43,6 @@ model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=
 
 # Definir el archivo de logs
 log_file = "results/training_log.txt"
-with open(log_file, "w") as f:
 f = open(log_file, "w")  # Abrir antes del entrenamiento
 f.write("Epoch,Loss,Accuracy\n")
 
