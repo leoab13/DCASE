@@ -1,46 +1,80 @@
+import numpy as np
+import pandas as pd
 import tensorflow as tf
-import keras
-import os
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.metrics import classification_report, confusion_matrix
+
+# Cargar datos
+df = pd.read_csv("data/features.csv")
+X = df.drop(columns=["label"]).values  # Características
+y = df["label"].values  # Etiquetas
+
+# Normalizar características
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# Codificar etiquetas
+encoder = LabelEncoder()
+y = encoder.fit_transform(y)
+
+# Dividir en conjuntos de entrenamiento y prueba
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Remodelar los datos para LSTM
+X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
+X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
+
+# Definir el modelo LSTM
+model = tf.keras.models.Sequential([
+    tf.keras.layers.LSTM(64, return_sequences=True, input_shape=(X_train.shape[1], 1)),
+    tf.keras.layers.LSTM(32, return_sequences=False),
+    tf.keras.layers.Dense(16, activation='relu'),
+    tf.keras.layers.Dense(len(np.unique(y)), activation='softmax')
+])
+
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+# Entrenar el modelo y guardar los resultados de cada época
+log_file = "results/training_log.txt"
+with open(log_file, "w") as f:
+    f.write("Epoch,Loss,Accuracy\n")
 
 
-def load_dataset(dataset_url):
-    """
-    Descarga y carga el dataset como un objeto tf.data.Dataset.
-    """
-    dataset_path = keras.utils.get_file("dataset", dataset_url)
+    class CustomCallback(tf.keras.callbacks.Callback):
+        def on_epoch_end(self, epoch, logs=None):
+            logs = logs or {}
+            f.write(f"{epoch + 1},{logs['loss']:.4f},{logs['accuracy']:.4f}\n")
+            f.flush()
 
-    # Aquí se debería incluir el código para cargar y procesar los archivos de audio
-    dataset = tf.data.Dataset.list_files(os.path.join(os.path.dirname(dataset_path), "*.wav"))
+history = model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_test, y_test),
+                    callbacks=[CustomCallback()])
 
-    return dataset
+# Evaluar el modelo
+y_pred = np.argmax(model.predict(X_test), axis=1)
+report = classification_report(y_test, y_pred, target_names=encoder.classes_, output_dict=True)
 
+# Guardar métricas finales
+metrics_file = "results/final_metrics.txt"
+with open(metrics_file, "w") as f:
+    f.write("Precision, Recall, F1-Score\n")
+    for label in encoder.classes_:
+        f.write(
+            f"{label},{report[label]['precision']:.4f},{report[label]['recall']:.4f},{report[label]['f1-score']:.4f}\n")
 
-def build_lstm_model(input_shape, num_classes):
-    """
-    Construye un modelo LSTM para clasificación de audio.
-    """
-    model = keras.models.Sequential([
-        keras.layers.LSTM(128, return_sequences=True, input_shape=input_shape),
-        keras.layers.LSTM(64),
-        keras.layers.Dense(32, activation='relu'),
-        keras.layers.Dense(num_classes, activation='softmax')
-    ])
+# Matriz de confusión
+conf_matrix = confusion_matrix(y_test, y_pred)
+plt.figure(figsize=(8, 6))
+sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", xticklabels=encoder.classes_, yticklabels=encoder.classes_)
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("Confusion Matrix")
+plt.savefig("results/confusion_matrix.png")
+plt.close()
 
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+# Guardar el modelo
+model.save("results/lstm_model.h5")
 
-    return model
-
-
-def train_and_evaluate(model, train_dataset, val_dataset, epochs=10, log_file="training_log.txt"):
-    """
-    Entrena el modelo y guarda la salida en un archivo de texto.
-    """
-    with open(log_file, "w") as f:
-        class LogCallback(keras.callbacks.Callback):
-            def on_epoch_end(self, epoch, logs=None):
-                logs = logs or {}
-                log_str = f"Epoch {epoch + 1}/{epochs}: " + ", ".join([f"{k}: {v:.4f}" for k, v in logs.items()]) + "\n"
-                f.write(log_str)
-                print(log_str, end="")
-
-        model.fit(train_dataset, validation_data=val_dataset, epochs=epochs, callbacks=[LogCallback()])
+print("Entrenamiento finalizado. Resultados guardados en la carpeta 'results'.")

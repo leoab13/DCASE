@@ -1,6 +1,7 @@
 keras
 matplotlib
 numpy
+tensorflow
 pandas
 scipy
 librosa
