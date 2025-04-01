@@ -7,8 +7,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix
 
-# Cargar datos
-df = pd.read_csv("data/features.csv")
+# Cargar datos 100% del dataset
+# df = pd.read_csv("data/processed/features_labeled.csv")  # Usar el CSV ya etiquetado
+
+# Cargar solo el 3% de los datos
+df = pd.read_csv("data/processed/features_labeled.csv").sample(frac=0.03, random_state=42)
+
 X = df.drop(columns=["label"]).values  # Características
 y = df["label"].values  # Etiquetas
 
@@ -37,20 +41,24 @@ model = tf.keras.models.Sequential([
 
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-# Entrenar el modelo y guardar los resultados de cada época
+# Definir el archivo de logs
 log_file = "results/training_log.txt"
 with open(log_file, "w") as f:
-    f.write("Epoch,Loss,Accuracy\n")
+f = open(log_file, "w")  # Abrir antes del entrenamiento
+f.write("Epoch,Loss,Accuracy\n")
 
+# Callback para guardar el historial de entrenamiento
+class CustomCallback(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        f.write(f"{epoch + 1},{logs['loss']:.4f},{logs['accuracy']:.4f}\n")
+        f.flush()  # Asegurar que se escriban los datos en el archivo
 
-    class CustomCallback(tf.keras.callbacks.Callback):
-        def on_epoch_end(self, epoch, logs=None):
-            logs = logs or {}
-            f.write(f"{epoch + 1},{logs['loss']:.4f},{logs['accuracy']:.4f}\n")
-            f.flush()
-
+# Entrenar el modelo
 history = model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_test, y_test),
                     callbacks=[CustomCallback()])
+
+f.close()  # Cerrar el archivo después del entrenamiento
 
 # Evaluar el modelo
 y_pred = np.argmax(model.predict(X_test), axis=1)
@@ -75,6 +83,6 @@ plt.savefig("results/confusion_matrix.png")
 plt.close()
 
 # Guardar el modelo
-model.save("results/lstm_model.h5")
+# model.save("results/lstm_model.h5")
 
 print("Entrenamiento finalizado. Resultados guardados en la carpeta 'results'.")
