@@ -7,11 +7,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix
 
-# Cargar datos 100% del dataset
-# df = pd.read_csv("data/processed/features_labeled.csv")  # Usar el CSV ya etiquetado
+# Cargar los datos
+df = pd.read_csv("C:\\Users\\Leonardo\\Documents\\GitHub\\DCASE\\data\\processed\\features_labeled.csv")
 
-# Cargar solo el 3% de los datos
-df = pd.read_csv("data/processed/features_labeled.csv").sample(frac=0.03, random_state=42)
 
 X = df.drop(columns=["label"]).values  # Características
 y = df["label"].values  # Etiquetas
@@ -42,34 +40,34 @@ model = tf.keras.models.Sequential([
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 # Definir el archivo de logs
-log_file = "results/training_log.txt"
-f = open(log_file, "w")  # Abrir antes del entrenamiento
-f.write("Epoch,Loss,Accuracy\n")
+log_file = "C:\\Users\\Leonardo\\Documents\\GitHub\\DCASE\\results\\training_log.txt"
+with open(log_file, "w") as f:
+    f.write("Epoch,Loss,Accuracy,Val_Loss,Val_Accuracy\n")
 
 # Callback para guardar el historial de entrenamiento
 class CustomCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        f.write(f"{epoch + 1},{logs['loss']:.4f},{logs['accuracy']:.4f}\n")
-        f.flush()  # Asegurar que se escriban los datos en el archivo
+        with open(log_file, "a") as f:
+            f.write(f"{epoch + 1},{logs['loss']:.4f},{logs['accuracy']:.4f},{logs['val_loss']:.4f},{logs['val_accuracy']:.4f}\n")
+
+# Callback de Early Stopping
+early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
 
 # Entrenar el modelo
-history = model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_test, y_test),
-                    callbacks=[CustomCallback()])
-
-f.close()  # Cerrar el archivo después del entrenamiento
+history = model.fit(X_train, y_train, epochs=100, batch_size=32, validation_data=(X_test, y_test),
+                    callbacks=[CustomCallback(), early_stopping])
 
 # Evaluar el modelo
 y_pred = np.argmax(model.predict(X_test), axis=1)
 report = classification_report(y_test, y_pred, target_names=encoder.classes_, output_dict=True)
 
 # Guardar métricas finales
-metrics_file = "results/final_metrics.txt"
+metrics_file = "C:\\Users\\Leonardo\\Documents\\GitHub\\DCASE\\results\\final_metrics.txt"
 with open(metrics_file, "w") as f:
     f.write("Precision, Recall, F1-Score\n")
     for label in encoder.classes_:
-        f.write(
-            f"{label},{report[label]['precision']:.4f},{report[label]['recall']:.4f},{report[label]['f1-score']:.4f}\n")
+        f.write(f"{label},{report[label]['precision']:.4f},{report[label]['recall']:.4f},{report[label]['f1-score']:.4f}\n")
 
 # Matriz de confusión
 conf_matrix = confusion_matrix(y_test, y_pred)
@@ -78,10 +76,7 @@ sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", xticklabels=encoder.
 plt.xlabel("Predicted")
 plt.ylabel("Actual")
 plt.title("Confusion Matrix")
-plt.savefig("results/confusion_matrix.png")
+plt.savefig("C:\\Users\\Leonardo\\Documents\\GitHub\\DCASE\\results\\confusion_matrix.png")
 plt.close()
-
-# Guardar el modelo
-# model.save("results/lstm_model.h5")
 
 print("Entrenamiento finalizado. Resultados guardados en la carpeta 'results'.")
